@@ -55,19 +55,53 @@ local function _open(cfg)
   })
 
   -- 4. Launch `jjui` as the terminal program.
-  -- `termopen` reuses the current buffer when it is a fresh terminal buffer.
-  vim.fn.termopen(cmd)
+  --    `termopen` reuses the current buffer when it is a fresh terminal buffer.
+  --    It returns a job ID (number) synchronously; command-not-found and other
+  --    launch failures surface asynchronously via `on_exit` (exit code 127
+  --    means the shell could not find the command).
+  local open_ok, result = pcall(vim.fn.termopen, cmd, {
+    on_exit = function(_job_id, exit_code, _event)
+      if exit_code == 127 then
+        vim.schedule(function()
+          vim.notify(
+            "jjuipane: command not found: " .. cmd,
+            vim.log.levels.WARN
+          )
+          M.close()
+        end)
+      end
+    end,
+  })
+
+  if not open_ok then
+    -- termopen itself threw an error (e.g. invalid argument type)
+    vim.api.nvim_win_close(win, true)
+    vim.api.nvim_buf_delete(buf, { force = true })
+    vim.notify("jjuipane: " .. tostring(result), vim.log.levels.WARN)
+    return
+  end
+
+  if type(result) ~= "number" then
+    -- Unexpected return — not a job ID. Clean up.
+    local msg = (type(result) == "table" and result.message)
+        and ("jjuipane: " .. result.message)
+        or ("jjuipane: failed to start command: " .. cmd)
+    vim.api.nvim_win_close(win, true)
+    vim.api.nvim_buf_delete(buf, { force = true })
+    vim.notify(msg, vim.log.levels.WARN)
+    return
+  end
 
   -- 5. Capture the actual buffer (termopen may replace it)
   buf = vim.api.nvim_win_get_buf(win)
 
-  -- 6. Tidy buffer-level options
-  local bo = { buf = buf }
-  vim.api.nvim_set_option_value("number",          false, bo)
-  vim.api.nvim_set_option_value("relativenumber",  false, bo)
-  vim.api.nvim_set_option_value("signcolumn",      "no",    bo)
-  vim.api.nvim_set_option_value("wrap",            false,   bo)
-  vim.api.nvim_set_option_value("swapfile",        false,   bo)
+  -- 6. Tidy window- and buffer-level options
+  local wo = { win = win }
+  vim.api.nvim_set_option_value("number", false, wo)
+  vim.api.nvim_set_option_value("relativenumber", false, wo)
+  vim.api.nvim_set_option_value("signcolumn", "no", wo)
+  vim.api.nvim_set_option_value("wrap", false, wo)
+  vim.api.nvim_set_option_value("swapfile", false, { buf = buf })
 
   -- 7. Autocmds: detect terminal death and external buffer/window removal
   local group = vim.api.nvim_create_augroup(AUGROUP, { clear = true })

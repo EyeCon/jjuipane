@@ -9,6 +9,7 @@ A Neovim plugin that provides a toggleable terminal pane for running `jjui` (Juj
 3. **Starts `jjui` in a terminal** — When made visible, launches `jjui` (or a custom command) as a terminal process in the pane window.
 4. **Has customizable key bindings** — Allows users to define a normal-mode keymap for toggling the pane via the `setup()` function.
 5. **Cleans up when terminal exits** — Automatically closes the window and deletes the buffer when the terminal process exits or when the buffer is externally wiped.
+6. **Fails gracefully on command errors** — If the configured command cannot be found or `termopen` fails, the pane is closed, state is reset, and the user is warned via `vim.notify` with the reason for the failure.
 
 ## Installation
 
@@ -201,6 +202,22 @@ The plugin sets up two autocmds for cleanup:
 2. **`BufWipeout`** — Fires if the buffer is externally wiped, automatically resetting state.
 
 Both autocmds are buffer-local and run once.
+
+## Error Handling
+
+The plugin guards against command execution failures in three layers:
+
+1. **Synchronous exceptions** — If `termopen` itself throws an error (e.g., invalid argument type), the split window and buffer are closed immediately and the user is warned with the error message.
+
+2. **Command not found** — If the shell cannot locate the command (exit code 127), the pane is automatically closed and a warning is shown:
+
+   ```
+   jjuipane: command not found: <cmd>
+   ```
+
+3. **Unexpected return value** — If `termopen` returns something other than a job ID number, the split is cleaned up and a warning is shown with the available details.
+
+In all failure cases, no window or buffer is left behind — the pane is fully removed and internal state is reset.
 
 ## Requirements
 
