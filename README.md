@@ -209,11 +209,19 @@ The plugin guards against command execution failures in three layers:
 
 1. **Synchronous exceptions** — If `termopen` itself throws an error (e.g., invalid argument type), the split window and buffer are closed immediately and the user is warned with the error message.
 
-2. **Command not found** — If the shell cannot locate the command (exit code 127), the pane is automatically closed and a warning is shown:
+2. **Non-zero exit code** — If the command exits with any non-zero exit code, the pane is automatically closed and a warning is shown. The message varies by exit code:
 
-   ```
-   jjuipane: command not found: <cmd>
-   ```
+   - Exit code 127 (command not found):
+     ```
+     jjuipane: command not found: <cmd>
+     ```
+
+   - Any other non-zero exit code:
+     ```
+     jjuipane: exited with code <N>
+     ```
+
+   A normal exit (code 0) is left to the existing `TermClose` autocmd for cleanup.
 
 3. **Unexpected return value** — If `termopen` returns something other than a job ID number, the split is cleaned up and a warning is shown with the available details.
 

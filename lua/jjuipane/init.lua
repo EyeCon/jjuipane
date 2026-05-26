@@ -61,10 +61,13 @@ local function _open(cfg)
   --    means the shell could not find the command).
   local open_ok, result = pcall(vim.fn.termopen, cmd, {
     on_exit = function(_job_id, exit_code, _event)
-      if exit_code == 127 then
+      if exit_code ~= 0 then
         vim.schedule(function()
+          local reason = exit_code == 127
+              and ("command not found: " .. cmd)
+              or ("exited with code " .. exit_code)
           vim.notify(
-            "jjuipane: command not found: " .. cmd,
+            "jjuipane: " .. reason,
             vim.log.levels.WARN
           )
           M.close()
