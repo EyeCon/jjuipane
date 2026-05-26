@@ -7,11 +7,13 @@ local state = {
   win_id      = nil,     -- neovim window id of the pane
   buf_id      = nil,     -- neovim buffer id backing the terminal
   prev_win_id = nil,     -- window that had focus before pane opened
+  keymap      = nil,     -- keybinding to toggle the pane
 }
 
 local AUGROUP       = "JjuiPane"
 local DEFAULT_CMD   = "jjui"
 local DEFAULT_WIDTH = 80
+local DEFAULT_KEYMAP = nil
 
 --- ── Internal helpers ─────────────────────────────────────────────────
 
@@ -130,10 +132,26 @@ local function _open(cfg)
     end,
   })
 
-  -- 8. Persist ids and mark open
+  -- 7. Add keybinding to close pane in terminal (both normal and insert modes)
+  if DEFAULT_KEYMAP then
+    local key = DEFAULT_KEYMAP:gsub("^<leader>", "<Leader>")
+    vim.keymap.set("t", key, "<Cmd>JjuiPane<CR>", {
+      buffer = buf,
+      remap = true,
+      desc = "Close jjui pane",
+    })
+  end
+
+  -- 8. Ensure terminal starts in insert mode
+  vim.api.nvim_win_call(win, function()
+    vim.cmd("startinsert")
+  end)
+
+  -- 9. Persist ids and mark open
   state.win_id  = win
   state.buf_id  = buf
   state.visible = true
+  state.keymap = DEFAULT_KEYMAP
 end
 
 --- ── Public API ────────────────────────────────────────────────────────────
@@ -192,6 +210,7 @@ function M.setup(opts)
   opts = opts or {}
 
   DEFAULT_WIDTH = opts.width or DEFAULT_WIDTH
+  DEFAULT_KEYMAP = opts.keymap
   if opts.shellcmd then
     DEFAULT_CMD = opts.shellcmd
   end

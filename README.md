@@ -84,59 +84,16 @@ The `setup()` function accepts a table with the following fields:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `keymap` | `string \| nil` | `nil` | Normal-mode keymap for toggling the pane. Example: `"<leader>j"` |
+| `keymap` | `string` or `nil` | `nil` | Normal-mode keymap for toggling the pane. This keybinding also closes the pane when pressed in terminal mode (both normal and insert). Example: `"<leader>jj"` |
 | `cmd` | `string` | `"JjuiPane"` | Name of the user command to create. Example: `"JJUI"` |
 | `width` | `number` | `80` | Default width (in columns) for the vertical split. Example: `100` |
-| `shellcmd` | `string` | `"jjui"` | Command to run in the terminal. Example: `"jjui log"` |
+| `shellcmd` | `string` | `"jjui"` | Command to run in the terminal. Example: `"jj log"` |
 
-### Example Configurations
-
-#### Minimal
-
-```lua
-require("jjuipane").setup()
-```
-
-This creates the `:JjuiPane` command with default settings (80-column width, runs `jjui`).
-
-#### With Keymap
 
 ```lua
 require("jjuipane").setup({
-  keymap = "<leader>j",
-})
-```
-
-Adds a normal-mode keymap `<leader>j` to toggle the pane.
-
-#### Custom Command Name and Width
-
-```lua
-require("jjuipane").setup({
-  cmd = "JJUI",
-  width = 120,
-})
-```
-
-Creates the `:JJUI` command with a 120-column width.
-
-#### Custom Shell Command
-
-```lua
-require("jjuipane").setup({
-  shellcmd = "jjui log",
-  width = 100,
-})
-```
-
-Runs `jjui log` instead of the default `jjui` command.
-
-#### Full Configuration
-
-```lua
-require("jjuipane").setup({
-  keymap = "<leader>j",
-  cmd = "JJUI",
+  keymap = "<leader>jj",
+  cmd = "JjuiPane",
   width = 100,
   shellcmd = "jjui",
 })
@@ -179,10 +136,16 @@ Check if the pane is currently visible.
 Get a snapshot of the internal state.
 
 **Returns:** `table` with fields:
-- `visible` (boolean) — Whether the pane is currently open
-- `win_id` (number \| nil) — Neovim window ID of the pane
-- `buf_id` (number \| nil) — Neovim buffer ID backing the terminal
-- `prev_win_id` (number \| nil) — Window that had focus before pane opened
+|- `visible` (boolean) — Whether the pane is currently open
+|- `win_id` (number | nil) — Neovim window ID of the pane
+|- `buf_id` (number | nil) — Neovim buffer ID backing the terminal
+|- `prev_win_id` (number | nil) — Window that had focus before pane opened
+|- `keymap` (string | nil) — Keybinding used for toggling the pane
+
+### Terminal Behavior
+
+- **Insert mode** — The terminal starts in insert mode immediately upon opening.
+- **Closing from terminal** — Press your configured keybinding (e.g., `<leader>j`) in both normal or insert mode to close the pane and return to your original window.
 
 ## Buffer Options
 
