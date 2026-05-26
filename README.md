@@ -35,7 +35,7 @@ Place the plugin in your Neovim runtime path, or use your preferred plugin manag
 
 ```lua
 require("jjuipane").setup({
-  keymap = "<leader>j",  -- Press <leader>j in normal mode to toggle
+  keymap = "<leader>jj",  -- Press <leader>jj in normal mode to toggle
 })
 ```
 

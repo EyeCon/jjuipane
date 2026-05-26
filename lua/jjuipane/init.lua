@@ -61,7 +61,10 @@ local function _open(cfg)
   --    means the shell could not find the command).
   local open_ok, result = pcall(vim.fn.termopen, cmd, {
     on_exit = function(_job_id, exit_code, _event)
-      if exit_code ~= 0 then
+      -- Exit code 129 typically means SIGHUP (hangup) when closing window
+      -- Exit code 137 typically means SIGKILL when window is forcibly closed
+      -- Suppress warnings for signal-based terminations
+      if exit_code ~= 0 and exit_code ~= 129 and exit_code ~= 137 then
         vim.schedule(function()
           local reason = exit_code == 127
               and ("command not found: " .. cmd)
