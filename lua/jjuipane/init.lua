@@ -44,8 +44,17 @@ local function _open(cfg)
     return -- guard against double-open
   end
 
-  -- 1. Remember the original window
+  -- 1. Remember the original window and resolve the cwd to the active file's directory
   state.prev_win_id = vim.api.nvim_get_current_win()
+  local prev_buf = vim.api.nvim_win_get_buf(state.prev_win_id)
+  local active_path = vim.api.nvim_buf_get_name(prev_buf)
+  local cwd = vim.fn.getcwd()
+  if active_path and active_path ~= "" then
+    local dir = vim.fs.dirname(active_path)
+    if dir and vim.fn.isdirectory(dir) == 1 then
+      cwd = dir
+    end
+  end
 
   -- 2. Create a scratch buffer for the new split
   local buf = vim.api.nvim_create_buf(false, true)
@@ -62,6 +71,7 @@ local function _open(cfg)
   --    launch failures surface asynchronously via `on_exit` (exit code 127
   --    means the shell could not find the command).
   local open_ok, result = pcall(vim.fn.termopen, cmd, {
+    cwd = cwd,
     on_exit = function(_job_id, exit_code, _event)
       -- Exit code 129 typically means SIGHUP (hangup) when closing window
       -- Exit code 137 typically means SIGKILL when window is forcibly closed
